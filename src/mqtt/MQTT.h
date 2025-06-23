@@ -61,7 +61,7 @@ class MQTT : private concurrency::OSThread
     bool isUsingDefaultServer() { return isConfiguredForDefaultServer; }
     bool isUsingDefaultRootTopic() { return isConfiguredForDefaultRootTopic; }
 
-    /// Validate the meshtastic_ModuleConfig_MQTTConfig.
+    /// Validate the meshtastic_ModuleConfig_MQTTConfig.##
     static bool isValidConfig(const meshtastic_ModuleConfig_MQTTConfig &config) { return isValidConfig(config, nullptr); }
 
   protected:
