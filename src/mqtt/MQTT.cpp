@@ -113,8 +113,22 @@ inline void onReceiveProto(char *topic, byte *payload, size_t length)
         // likely they discovered each other via a channel we have downlink enabled for
         if (isToUs(p.get()) || (tx && tx->has_user && rx && rx->has_user))
             router->enqueueReceivedMessage(p.release());
-    } else if (router && perhapsDecode(p.get())) // ignore messages if we don't have the channel key
-        router->enqueueReceivedMessage(p.release());
+    } else if (router && perhapsDecode(p.get())) { // ignore messages if we don't have the channel key
+        // Enqueue for local processing
+        router->enqueueReceivedMessage(p.get());
+        // Rebroadcast over LoRa if received via MQTT and not from us
+        if (p->via_mqtt && !isFromUs(p.get()) && isBroadcast(p->to)) {
+            // Make a copy to avoid double-free
+            meshtastic_MeshPacket *rebroadcast = packetPool.allocCopy(*p);
+            // Mark as not via_mqtt to avoid rebroadcast loops
+            rebroadcast->via_mqtt = false;
+            // Optionally, set a new packet id to avoid duplicate suppression
+            rebroadcast->id = generatePacketId();
+            router->sendLocal(rebroadcast, RX_SRC_LOCAL);
+        }
+        // Release the original packet
+        packetPool.release(p.release());
+    }
 }
 
 #if !defined(ARCH_NRF52) || NRF52_USE_JSON
